@@ -2,7 +2,7 @@
 
 
 # Avery Tan altan 1392212
-# CMPUT366 A6
+# CMPUT366 A7
 
 
 """
@@ -20,21 +20,28 @@ import operator
 import random
 
 
-w=None
-num_tilings = 50
-tile_width = 0.2
+
+
+
+
 curr_state = None
-feature_vector = None
-last_action = None
-true_val = None
 old_state = None
-action_list = None
+last_action = None
 iht=None
 
-alpha = 0.01/50
-gamma = 1.0
 
-w_dimen = 300
+mem_size = None
+num_tilings = None
+tile_width = None
+alpha = None
+lambd = None
+epsilon = None
+w=None
+gamma = None
+z = None
+
+
+
 
 
 
@@ -73,29 +80,35 @@ def agent_init():
     that particular action taken in that particular state
     Returns: nothing
     """
-    global w, num_tilings, feature_vector, true_val, action_list, iht, w_dimen
-
-    true_val = np.load('TrueValueFunction.npy')
+    global w, num_tilings, mem_size, tile_width, alpha, gamma, lambd, epsilon, iht 
     
-    w = np.zeros(w_dimen)
-    
-    action_list = list()
-    for i in range(-100,101):
-        action_list.append(i)
+    num_tilings = 8
+    mem_size = 4096
+    tile_width = 0.125
+    alpha = 0.1/num_tilings
+    lambd = 0.9
+    epsilon = 0.0
+    gamma = 1.0
 
-    iht = IHT(2000000)
+
+    w = np.zeros(mem_size)
+    for i in range(mem_size):
+    	w[i] = random.uniform(-0.001,0)
+
+
+    iht = IHT(mem_size)
 
 
 def agent_start(state):
     """
     returns random action
     """
-    global curr_state, last_action, old_state, action_list
+    global curr_state, last_action, old_state, action_list, z
+
+    z = np.zeros(mem_size)
 
     curr_state = state 
-    action = None
-    left_or_right = rand_in_range(201)
-    action = action_list[left_or_right]
+    action = random.randrange(-1,2)
     
 
     old_state=state
@@ -109,15 +122,20 @@ def agent_step(reward, state): # returns NumPy array, reward: floating point, th
     Arguments: reward: floting point, state: int between 1 and 1000
     Returns action as an int between -100 and 100
     """
-    global alpha, w, gamma, old_state, action_list, iht, curr_state, last_action
+    global  old_state, iht, curr_state, last_action, alpha, w, gamma, num_tilings, tile_width, epsilon
+    
     curr_state = state
-    action = None
-    left_or_right = rand_in_range(201)
-    action = action_list[left_or_right]
+
+    #unpack the np arrays
+    x,xdot = state
+    o_x, o_xdot =  old_state
+
+    action = random.randrange(-1,2)
+
     
     #calculate indices of affected features of curr_state and old_state
-    features_old = tiles(iht,50,[old_state/1000.0*1/tile_width]) #x(s) components. have 50 of them
-    features_curr = tiles(iht,50,[curr_state/1000.0*1/tile_width]) #x(s') components. have 50 of them
+    features_old = tiles(iht,num_tilings,[((o_x/(0.5+1.2))*(1/tile_width)), ((o_xdot/(0.07+0.07))*(1/tile_width))],[last_action]) #x(s) components. have 50 of them
+    features_curr = tiles(iht,num_tilings,[((x/(0.5+1.2))*(1/tile_width)), ((xdot/(0.07+0.07))*(1/tile_width))], [action]) #x(s') components. have 50 of them
     gradient_indices = features_old 
 
 
