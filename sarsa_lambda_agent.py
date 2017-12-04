@@ -50,7 +50,7 @@ def get_RMSE():
     """
     returns rmse and state value estimates
     """
-    global w, true_val, num_tilings, feature_vector,iht, tile_width
+    global w, num_tilings, feature_vector,iht, tile_width
 
     value_list = list()
 
@@ -69,7 +69,49 @@ def get_RMSE():
     return (rmse[0],value_list)
 
 
+def perform3d():
+
+    global w
+
+    x = [-1.2]
+    xdot = [-0.07]
     
+    # building x, and xdot value lists.
+    xstart = -1.2
+    for i in range(49):
+        xstart+=0.034
+        x.append(xstart)
+
+    dot_start = -0.07
+    for i in range(49):
+        dot_start+=0.003
+        xdot.append(dot_start)
+
+    ax = list()
+    ay = list()
+    q_list = list()
+    for i in x:
+        for j in xdot:
+            max_q = -999999999.9
+            for z in range(0,3):
+                features = tiles(iht,num_tilings,[((i/(0.5+1.2))*(1/tile_width)), ((j/(0.07+0.07))*(1/tile_width))],[z]) #x(s) components. have 50 of them
+                est_q = 0.0
+                for ii in features:
+                    est_q+=w[ii]
+                if est_q > max_q:
+                    max_q = est_q
+            q_list.append(-1.0*max_q)
+            ax.append(i)
+            ay.append(j)
+
+
+    np.save('x', ax)
+    np.save('y',ay)
+    np.save('z', q_list)
+    return (ax,ay,q_list)
+
+
+
 
 
 
@@ -108,11 +150,12 @@ def agent_start(state):
     z = np.zeros(mem_size)
 
     curr_state = state 
-    action = random.randrange(-1,2)
+    action = random.randrange(0,3)
     
 
     old_state=state
     last_action=action
+
 
     return action
 
@@ -122,44 +165,58 @@ def agent_step(reward, state): # returns NumPy array, reward: floating point, th
     Arguments: reward: floting point, state: int between 1 and 1000
     Returns action as an int between -100 and 100
     """
-    global  old_state, iht, curr_state, last_action, alpha, w, gamma, num_tilings, tile_width, epsilon
+    global  old_state, iht, curr_state, last_action, alpha, w, gamma, num_tilings, tile_width, epsilon, z, lambd
     
-    curr_state = state
+    # print old_state, state
 
+    action = None
+    curr_state = state
+    err = reward
+ 
     #unpack the np arrays
     x,xdot = state
     o_x, o_xdot =  old_state
 
-    action = random.randrange(-1,2)
+    
 
     
     #calculate indices of affected features of curr_state and old_state
     features_old = tiles(iht,num_tilings,[((o_x/(0.5+1.2))*(1/tile_width)), ((o_xdot/(0.07+0.07))*(1/tile_width))],[last_action]) #x(s) components. have 50 of them
+
+    for i in features_old:
+        err -= w[i] 
+        z[i] = 1.0
+
+
+    ######## ACTION SELECTION ########
+    ExploreExploit = rand_un()
+    if ExploreExploit < epsilon:
+        action = random.randrange(0,3) # Explore
+    else:
+
+    ## GREEDY ACTION ##
+        max_q  = -999999999.9 #approx -inf
+        for i in range(0,3): #number of poss actions
+            Xs = tiles(iht,num_tilings,[((x/(0.5+1.2))*(1/tile_width)), ((xdot/(0.07+0.07))*(1/tile_width))], [i]) #x(s') components. have 50 of them
+            est_q = 0.0
+            for j in Xs:
+                est_q += w[j]
+
+            if est_q > max_q:
+                max_q = est_q
+                action  =  i
+
     features_curr = tiles(iht,num_tilings,[((x/(0.5+1.2))*(1/tile_width)), ((xdot/(0.07+0.07))*(1/tile_width))], [action]) #x(s') components. have 50 of them
-    gradient_indices = features_old 
+    for i in features_curr:
+    	err += gamma*w[i]
 
+    w += alpha*err*z
+    z = z*gamma*lambd
 
-    #calculate state value for old_state
-    v_old = 0.0
-    for ii in features_old:
-        v_old+=w[ii]
-
-    #calculate state value for curr_state
-    v_curr = 0.0
-    for ij in features_curr:
-        v_curr+=w[ij]
-    
-    error = alpha*(reward+gamma*v_curr-v_old)
-       
-
-    #update weights
-    for ik in gradient_indices:
-        w[ik] = w[ik]+error
 
     old_state = state
     last_action = action
     
-
 
     return action
 
@@ -169,26 +226,21 @@ def agent_end(reward):
     Arguments: reward: floating point
     Returns: Nothing
     """
-    global w, feature_vector, old_state, curr_state, iht, num_tilings, alpha, gamma
+    global old_state, last_action, w, alpha, z, iht, num_tilings, tile_width
 
+    err = reward
 
-    features_old = tiles(iht,50,[old_state/1000.0*1/tile_width]) #x(s) components. have 50 of them
-    features_curr = tiles(iht,50,[curr_state/1000.0*1/tile_width]) #x(s') components. have 50 of them
-    gradient_indices = features_old
+    o_x,o_xdot = old_state
+    features_old = tiles(iht,num_tilings,[((o_x/(0.5+1.2))*(1/tile_width)), ((o_xdot/(0.07+0.07))*(1/tile_width))],[last_action]) #x(s) components. have 50 of them
 
-
-    error = None
-    v_old = 0.0
     for i in features_old:
-        v_old+=w[i]
+    	err -= w[i]
+    	z[i] = 1.0
+
+    w += alpha*err * z
+
 
     
-    #since curr_state is terminal, it has value of 0
-    error = alpha*(reward-v_old)
-       
-
-    for i in gradient_indices:
-        w[i] = w[i]+error
 
     return
 
@@ -219,6 +271,10 @@ def agent_message(in_message): # returns string, in_message: string
         # print 'rmse', rmse
         
         return rmse
+    elif (in_message == 'perform3d'):
+        threeD_data = perform3d()
+        return threeD_data
+
     else:
         return "I don't know what to return!!"
 

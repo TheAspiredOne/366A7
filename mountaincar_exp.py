@@ -24,7 +24,8 @@ if __name__ == "__main__":
         print "run number : ", r
         RL_init()
         for e in range(num_episodes):
-            # print '\tepisode {}'.format(e+1)
+            print '\tepisode {}'.format(e+1)
             RL_episode(0)
             steps[r,e] = RL_num_steps()
     np.save('steps',steps)
+    threed_stuff= RL_agent_message('perform3d')
