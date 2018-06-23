@@ -1,3 +1,6 @@
+
+#Avery Tan (altan) 1392212 CMPUT366A7
+
 import os
 from matplotlib import pyplot as plt
 import numpy as np

@@ -1,0 +1,30 @@
+## Avery Tan (altan) 1392212 CMPUT366A7
+
+
+
+##Contents(13 files): 
+   * README
+   * sarsa_lambda_agent.py
+   * mountaincar_exp.py 
+   * mountaincar_exp_1000_episodes.py <--exp program for part 3
+   * plot.py <-- gen plot for part2
+   * plot3d.py <-- gen plot for part3
+
+   * data <--- directory containing experiment data as npy files
+      * steps.npy
+      * x.npy
+      * y.npy
+      * z.npy
+   * Plots <--- directory containing plots as png files
+      * p2.png
+      * p3_after_1run_1000episodes.png
+      * p3_after_50runs_200episodes.png
+
+
+
+## Instructions for use
+   * ensure all relevant files in the same directory;
+   * run 'python mountaincar_exp.py' to run the exp for part 2
+   * run 'python plot.py' to gen plot as per part2 specs
+   * run 'python mountaincar_exp_1000_episodes.py' to run exp for part 3
+   * run 'python plot3d.py' to gen plot as per part3 specs

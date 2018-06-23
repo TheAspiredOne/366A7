@@ -17,8 +17,8 @@ RLGlue("mountaincar", "sarsa_lambda_agent")
 import numpy as np
 
 if __name__ == "__main__":
-    num_episodes = 200
-    num_runs = 50
+    num_episodes = 1000
+    num_runs = 1
 
     steps = np.zeros([num_runs,num_episodes])
 
@@ -29,5 +29,4 @@ if __name__ == "__main__":
             print '\tepisode {}'.format(e+1)
             RL_episode(0)
             steps[r,e] = RL_num_steps()
-    np.save('steps',steps)
     threed_stuff= RL_agent_message('perform3d')

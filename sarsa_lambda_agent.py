@@ -71,12 +71,16 @@ def get_RMSE():
 
 def perform3d():
 
+	"""
+	calculates relevant x,y,z coordinates and stores them as x.npy, y.npy and z.npy
+	"""
+
     global w
 
     x = [-1.2]
     xdot = [-0.07]
     
-    # building x, and xdot value lists.
+    # building x, and xdot value lists. 50 equally spaced values
     xstart = -1.2
     for i in range(49):
         xstart+=0.034
@@ -94,7 +98,7 @@ def perform3d():
         for j in xdot:
             max_q = -999999999.9
             for z in range(0,3):
-                features = tiles(iht,num_tilings,[((i/(0.5+1.2))*(1/tile_width)), ((j/(0.07+0.07))*(1/tile_width))],[z]) #x(s) components. have 50 of them
+                features = tiles(iht,num_tilings,[((i/(0.5+1.2))*(1/tile_width)), ((j/(0.07+0.07))*(1/tile_width))],[z]) #x(s) components. have 4096 of them
                 est_q = 0.0
                 for ii in features:
                     est_q+=w[ii]
@@ -162,12 +166,11 @@ def agent_start(state):
 
 def agent_step(reward, state): # returns NumPy array, reward: floating point, this_observation: NumPy array
     """
-    Arguments: reward: floting point, state: int between 1 and 1000
-    Returns action as an int between -100 and 100
+    Arguments: reward: should be a constant -1 until episode termination
+    Returns action as 0,1,or 2
     """
     global  old_state, iht, curr_state, last_action, alpha, w, gamma, num_tilings, tile_width, epsilon, z, lambd
     
-    # print old_state, state
 
     action = None
     curr_state = state
@@ -181,7 +184,7 @@ def agent_step(reward, state): # returns NumPy array, reward: floating point, th
 
     
     #calculate indices of affected features of curr_state and old_state
-    features_old = tiles(iht,num_tilings,[((o_x/(0.5+1.2))*(1/tile_width)), ((o_xdot/(0.07+0.07))*(1/tile_width))],[last_action]) #x(s) components. have 50 of them
+    features_old = tiles(iht,num_tilings,[((o_x/(0.5+1.2))*(1/tile_width)), ((o_xdot/(0.07+0.07))*(1/tile_width))],[last_action]) #x(s) components.
 
     for i in features_old:
         err -= w[i] 
@@ -197,7 +200,7 @@ def agent_step(reward, state): # returns NumPy array, reward: floating point, th
     ## GREEDY ACTION ##
         max_q  = -999999999.9 #approx -inf
         for i in range(0,3): #number of poss actions
-            Xs = tiles(iht,num_tilings,[((x/(0.5+1.2))*(1/tile_width)), ((xdot/(0.07+0.07))*(1/tile_width))], [i]) #x(s') components. have 50 of them
+            Xs = tiles(iht,num_tilings,[((x/(0.5+1.2))*(1/tile_width)), ((xdot/(0.07+0.07))*(1/tile_width))], [i]) #x(s') components. 
             est_q = 0.0
             for j in Xs:
                 est_q += w[j]
@@ -206,7 +209,7 @@ def agent_step(reward, state): # returns NumPy array, reward: floating point, th
                 max_q = est_q
                 action  =  i
 
-    features_curr = tiles(iht,num_tilings,[((x/(0.5+1.2))*(1/tile_width)), ((xdot/(0.07+0.07))*(1/tile_width))], [action]) #x(s') components. have 50 of them
+    features_curr = tiles(iht,num_tilings,[((x/(0.5+1.2))*(1/tile_width)), ((xdot/(0.07+0.07))*(1/tile_width))], [action]) #x(s') components. 
     for i in features_curr:
     	err += gamma*w[i]
 
@@ -231,7 +234,7 @@ def agent_end(reward):
     err = reward
 
     o_x,o_xdot = old_state
-    features_old = tiles(iht,num_tilings,[((o_x/(0.5+1.2))*(1/tile_width)), ((o_xdot/(0.07+0.07))*(1/tile_width))],[last_action]) #x(s) components. have 50 of them
+    features_old = tiles(iht,num_tilings,[((o_x/(0.5+1.2))*(1/tile_width)), ((o_xdot/(0.07+0.07))*(1/tile_width))],[last_action]) #x(s) components. 
 
     for i in features_old:
     	err -= w[i]
